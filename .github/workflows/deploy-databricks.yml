@@ -41,4 +41,4 @@ jobs:
 
       # Step 6: Upload notebook
       - name: Upload Notebook
-        run: databricks workspace import demo_notebook.py /Shared/github-actions/demo_notebook --language PYTHON --overwrite
+        run: databricks workspace import demo_book.py /Shared/github-actions/demo_notebook --language PYTHON --overwrite
