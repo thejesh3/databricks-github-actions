@@ -1,4 +1,4 @@
-name: Debug Databricks Deployment
+name: Deploy Notebook to Databricks
 
 on:
   push:
@@ -6,31 +6,44 @@ on:
       - main
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # STEP 1: Download repo
+      # STEP 1: Checkout repository (VERY IMPORTANT)
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # STEP 2: VERIFY FILE EXISTS
-      - name: List Files
-        run: ls -R
+      # STEP 2: Set stable Python version
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-      # STEP 3: Install CLI
+      # STEP 3: Install Databricks CLI (NEW SAFE WAY)
       - name: Install Databricks CLI
-        run: pip install databricks-cli==0.17.7
+        run: |
+          pip install --upgrade pip
+          pip install databricks-cli
 
-      # STEP 4: Configure auth
-      - name: Configure Databricks
+      # STEP 4: Configure Databricks authentication
+      - name: Configure Databricks CLI
         run: |
           mkdir -p ~/.databricks
-          printf "[DEFAULT]\nhost=%s\ntoken=%s\n" \
+          printf "[DEFAULT]\nhost = %s\ntoken = %s\n" \
           "${{ secrets.DATABRICKS_HOST }}" \
           "${{ secrets.DATABRICKS_TOKEN }}" > ~/.databrickscfg
 
-      # STEP 5: Upload file (ONLY after verification)
+      # STEP 5: Verify repo files exist (DEBUG STEP)
+      - name: List Files
+        run: ls -R
+
+      # STEP 6: Create folder in Databricks
+      - name: Create Workspace Folder
+        run: |
+          databricks workspace mkdirs /Shared/github-actions
+
+      # STEP 7: Upload notebook (YOUR FIXED FILE NAME)
       - name: Upload Notebook
         run: |
           databricks workspace import demo_book.py /Shared/github-actions/demo_book --language PYTHON --overwrite
