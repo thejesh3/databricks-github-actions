@@ -10,30 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code from GitHub
+      # Step 1: Checkout repo
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install OLD Databricks CLI (your current working version)
+      # Step 2: Install Python + CLI dependencies properly
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
       - name: Install Databricks CLI
         run: pip install databricks-cli==0.17.7
 
-      # Step 3: Configure Databricks authentication
-      - name: Configure Databricks CLI
+      # Step 3: Configure auth (IMPORTANT FIX)
+      - name: Configure Databricks
         run: |
           mkdir -p ~/.databricks
-          cat <<EOF > ~/.databrickscfg
-[DEFAULT]
-host = ${{ secrets.DATABRICKS_HOST }}
-token = ${{ secrets.DATABRICKS_TOKEN }}
-EOF
+          printf "[DEFAULT]\nhost = %s\ntoken = %s\n" \
+          "${{ secrets.DATABRICKS_HOST }}" \
+          "${{ secrets.DATABRICKS_TOKEN }}" > ~/.databrickscfg
 
-      # Step 4: Create folder in Databricks Workspace
-      - name: Create Workspace Folder
-        run: |
-          databricks workspace mkdirs /Shared/github-actions
+      # Step 4: Debug check (VERY IMPORTANT)
+      - name: Test CLI Connection
+        run: databricks workspace ls /
 
-      # Step 5: Upload Notebook to Databricks
+      # Step 5: Create folder
+      - name: Create Folder
+        run: databricks workspace mkdirs /Shared/github-actions
+
+      # Step 6: Upload notebook
       - name: Upload Notebook
-        run: |
-          databricks workspace import demo_notebook.py /Shared/github-actions/demo_notebook --language PYTHON --overwrite
+        run: databricks workspace import demo_notebook.py /Shared/github-actions/demo_notebook --language PYTHON --overwrite
