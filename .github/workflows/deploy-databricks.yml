@@ -1,4 +1,4 @@
-name: Deploy to Databricks
+name: Deploy Notebook to Databricks
 
 on:
   push:
@@ -10,24 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # Step 1: Checkout code from GitHub
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # Step 2: Install OLD Databricks CLI (your current working version)
       - name: Install Databricks CLI
-        run: pip install databricks-cli
+        run: pip install databricks-cli==0.17.7
 
-      - name: Configure Databricks
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      # Step 3: Configure Databricks authentication
+      - name: Configure Databricks CLI
         run: |
           mkdir -p ~/.databricks
-          echo "[DEFAULT]" > ~/.databrickscfg
-          echo "host = $DATABRICKS_HOST" >> ~/.databrickscfg
-          echo "token = $DATABRICKS_TOKEN" >> ~/.databrickscfg
+          cat <<EOF > ~/.databrickscfg
+[DEFAULT]
+host = ${{ secrets.DATABRICKS_HOST }}
+token = ${{ secrets.DATABRICKS_TOKEN }}
+EOF
 
-      - name: Create Folder in Databricks
-        run: databricks workspace mkdirs /Shared/github-actions
+      # Step 4: Create folder in Databricks Workspace
+      - name: Create Workspace Folder
+        run: |
+          databricks workspace mkdirs /Shared/github-actions
 
+      # Step 5: Upload Notebook to Databricks
       - name: Upload Notebook
-        run: databricks workspace import demo_notebook.py /Shared/github-actions/demo_notebook --overwrite
+        run: |
+          databricks workspace import demo_notebook.py /Shared/github-actions/demo_notebook --language PYTHON --overwrite
